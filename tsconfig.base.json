@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "ignoreDeprecations": "6.0",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@aratti/types": ["packages/types/src/index.ts"],
+      "@aratti/types/*": ["packages/types/src/*"],
+      "@aratti/db": ["packages/db/src/index.ts"],
+      "@aratti/db/*": ["packages/db/src/*"],
+      "@aratti/api": ["packages/api/src/index.ts"],
+      "@aratti/api/*": ["packages/api/src/*"],
+      "@aratti/payments": ["packages/payments/src/index.ts"],
+      "@aratti/payments/*": ["packages/payments/src/*"],
+      "@aratti/ui": ["packages/ui/src/index.ts"],
+      "@aratti/ui/*": ["packages/ui/src/*"],
+      "@aratti/auth": ["packages/auth/src/index.ts"],
+      "@aratti/auth/*": ["packages/auth/src/*"],
+      "@aratti/notifications": ["packages/notifications/src/index.ts"],
+      "@aratti/notifications/*": ["packages/notifications/src/*"],
+      "@aratti/analytics": ["packages/analytics/src/index.ts"],
+      "@aratti/analytics/*": ["packages/analytics/src/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist", "build"]
+}

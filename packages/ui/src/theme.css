@@ -1,0 +1,19 @@
+:root {
+  --harvest-primary: #6c5a00;
+  --harvest-primary-container: #ffd709;
+  --harvest-primary-fixed-dim: #efc900;
+  --harvest-secondary: #006666;
+  --harvest-secondary-container: #8dedec;
+  --harvest-tertiary: #5c5b5b;
+  --harvest-background: #f5f6f7;
+  --harvest-surface: #f5f6f7;
+  --harvest-surface-container-low: #eff1f2;
+  --harvest-surface-container: #e6e8ea;
+  --harvest-surface-container-high: #e0e3e4;
+  --harvest-surface-container-highest: #dadddf;
+  --harvest-surface-container-lowest: #ffffff;
+  --harvest-text: #18181b;
+  --harvest-outline-variant: #abadae;
+  --harvest-error: #dc2626;
+  --harvest-gradient-impact: linear-gradient(135deg, #6c5a00 0%, #efc900 100%);
+}

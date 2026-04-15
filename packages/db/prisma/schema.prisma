@@ -1,0 +1,491 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  USER
+  BUSINESS_OWNER
+  BUSINESS_STAFF
+  ADMIN
+}
+
+enum AccountStatus {
+  ACTIVE
+  BLOCKED
+  PENDING_DELETION
+}
+
+enum BusinessCategory {
+  BAKERY
+  CAFE
+  RESTAURANT
+  PASTRY
+  PREMIUM_GREENGROCER
+  HOTEL
+  OTHER
+}
+
+enum BusinessStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  PAUSED
+  SUSPENDED
+  REJECTED
+}
+
+enum BusinessMemberRole {
+  OWNER
+  MANAGER
+  STAFF
+}
+
+enum OfferCategory {
+  BAKERY
+  CAFE
+  RESTAURANT
+  PASTRY
+  PREMIUM_GREENGROCER
+  HOTEL
+  VEGAN
+  GLUTEN_FREE
+  OTHER
+}
+
+enum OfferStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  SOLD_OUT
+  EXPIRED
+  ARCHIVED
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  CANCELLED
+  PICKED_UP
+  NO_SHOW
+  REFUNDED
+  PAYMENT_EXPIRED
+}
+
+enum PaymentProvider {
+  MERCADO_PAGO
+  APPLE_PAY
+  STRIPE
+}
+
+enum PaymentStatus {
+  PENDING
+  REQUIRES_ACTION
+  AUTHORIZED
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum RefundStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum NotificationType {
+  ORDER_CONFIRMED
+  PICKUP_REMINDER
+  FAVORITE_NEW_OFFER
+  BUSINESS_NEW_ORDER
+  PAYOUT_SENT
+  ADMIN_ALERT
+}
+
+enum NotificationChannel {
+  IN_APP
+  PUSH
+  EMAIL
+  SMS
+}
+
+enum NotificationStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum SessionStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+model User {
+  id                  String           @id @default(uuid()) @db.Uuid
+  clerkUserId         String?          @unique @map("clerk_user_id")
+  email               String           @unique
+  emailVerifiedAt     DateTime?        @db.Timestamptz(6) @map("email_verified_at")
+  phone               String?          @unique
+  firstName           String?          @map("first_name")
+  lastName            String?          @map("last_name")
+  avatarUrl           String?          @map("avatar_url")
+  locale              String           @default("es-AR")
+  role                UserRole         @default(USER)
+  accountStatus       AccountStatus    @default(ACTIVE) @map("account_status")
+  lastSeenAt          DateTime?        @db.Timestamptz(6) @map("last_seen_at")
+  createdAt           DateTime         @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt           DateTime         @updatedAt @db.Timestamptz(6) @map("updated_at")
+  deletedAt           DateTime?        @db.Timestamptz(6) @map("deleted_at")
+  businessesOwned     Business[]       @relation("BusinessOwner")
+  businessMemberships BusinessMember[] @relation("BusinessMemberUser")
+  invitedMemberships  BusinessMember[] @relation("BusinessMemberInviter")
+  orders              Order[]
+  payments            Payment[]
+  favorites           Favorite[]
+  reviews             Review[]
+  notifications       Notification[]
+  sessions            Session[]
+  auditLogs           AuditLog[]       @relation("AuditActor")
+  requestedRefunds    Refund[]         @relation("RefundRequester")
+
+  @@index([role], map: "idx_users_role")
+  @@index([createdAt], map: "idx_users_created_at")
+  @@map("users")
+}
+
+model Business {
+  id                 String            @id @default(uuid()) @db.Uuid
+  ownerUserId        String            @db.Uuid @map("owner_user_id")
+  name               String
+  slug               String            @unique
+  cuit               String?
+  description        String?
+  category           BusinessCategory
+  phone              String?
+  email              String?
+  addressLine1       String            @map("address_line_1")
+  addressLine2       String?           @map("address_line_2")
+  city               String
+  province           String
+  postalCode         String?           @map("postal_code")
+  countryCode        String            @default("AR") @map("country_code")
+  latitude           Decimal           @db.Decimal(9, 6)
+  longitude          Decimal           @db.Decimal(9, 6)
+  timezone           String            @default("America/Argentina/Buenos_Aires")
+  openingHours       Json              @map("opening_hours")
+  verificationStatus BusinessStatus    @default(PENDING_VERIFICATION) @map("verification_status")
+  payoutAccountRef   String?           @map("payout_account_ref")
+  logoUrl            String?           @map("logo_url")
+  heroImageUrl       String?           @map("hero_image_url")
+  ratingAverage      Decimal           @default(0) @db.Decimal(3, 2) @map("rating_average")
+  ratingCount        Int               @default(0) @map("rating_count")
+  createdAt          DateTime          @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt          DateTime          @updatedAt @db.Timestamptz(6) @map("updated_at")
+  deletedAt          DateTime?         @db.Timestamptz(6) @map("deleted_at")
+  ownerUser          User              @relation("BusinessOwner", fields: [ownerUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  members            BusinessMember[]
+  offers             Offer[]
+  orders             Order[]
+  favorites          Favorite[]
+  reviews            Review[]
+
+  @@index([ownerUserId], map: "idx_businesses_owner_user_id")
+  @@index([verificationStatus], map: "idx_businesses_verification_status")
+  @@index([category], map: "idx_businesses_category")
+  @@index([latitude, longitude], map: "idx_businesses_lat_lng")
+  @@index([createdAt], map: "idx_businesses_created_at")
+  @@map("businesses")
+}
+
+model BusinessMember {
+  id              String             @id @default(uuid()) @db.Uuid
+  businessId      String             @db.Uuid @map("business_id")
+  userId          String             @db.Uuid @map("user_id")
+  memberRole      BusinessMemberRole @default(STAFF) @map("member_role")
+  invitedByUserId String?            @db.Uuid @map("invited_by_user_id")
+  acceptedAt      DateTime?          @db.Timestamptz(6) @map("accepted_at")
+  createdAt       DateTime           @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt       DateTime           @updatedAt @db.Timestamptz(6) @map("updated_at")
+  deletedAt       DateTime?          @db.Timestamptz(6) @map("deleted_at")
+  business        Business           @relation(fields: [businessId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  user            User               @relation("BusinessMemberUser", fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  invitedByUser   User?              @relation("BusinessMemberInviter", fields: [invitedByUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@unique([businessId, userId], map: "uq_business_members_business_user")
+  @@index([userId], map: "idx_business_members_user_id")
+  @@index([businessId], map: "idx_business_members_business_id")
+  @@index([createdAt], map: "idx_business_members_created_at")
+  @@map("business_members")
+}
+
+model Offer {
+  id                String        @id @default(uuid()) @db.Uuid
+  businessId        String        @db.Uuid @map("business_id")
+  title             String
+  description       String?
+  category          OfferCategory
+  originalPriceArs  Int           @map("original_price_ars")
+  rescuePriceArs    Int           @map("rescue_price_ars")
+  currencyCode      String        @default("ARS") @map("currency_code")
+  quantityTotal     Int           @map("quantity_total")
+  quantityAvailable Int           @map("quantity_available")
+  minPerOrder       Int           @default(1) @map("min_per_order")
+  maxPerOrder       Int?          @map("max_per_order")
+  pickupStartAt     DateTime      @db.Timestamptz(6) @map("pickup_start_at")
+  pickupEndAt       DateTime      @db.Timestamptz(6) @map("pickup_end_at")
+  status            OfferStatus   @default(DRAFT)
+  isFeatured        Boolean       @default(false) @map("is_featured")
+  tags              String[]
+  publishedAt       DateTime?     @db.Timestamptz(6) @map("published_at")
+  expiresAt         DateTime?     @db.Timestamptz(6) @map("expires_at")
+  createdAt         DateTime      @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt         DateTime      @updatedAt @db.Timestamptz(6) @map("updated_at")
+  deletedAt         DateTime?     @db.Timestamptz(6) @map("deleted_at")
+  business          Business      @relation(fields: [businessId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  images            OfferImage[]
+  orders            Order[]
+  reviews           Review[]
+
+  @@index([businessId, status], map: "idx_offers_business_status")
+  @@index([status, pickupStartAt, pickupEndAt], map: "idx_offers_status_pickup_window")
+  @@index([category], map: "idx_offers_category")
+  @@index([rescuePriceArs], map: "idx_offers_rescue_price_ars")
+  @@index([createdAt], map: "idx_offers_created_at")
+  @@map("offers")
+}
+
+model OfferImage {
+  id        String   @id @default(uuid()) @db.Uuid
+  offerId   String   @db.Uuid @map("offer_id")
+  imageUrl  String   @map("image_url")
+  blurHash  String?  @map("blur_hash")
+  width     Int?
+  height    Int?
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt DateTime @updatedAt @db.Timestamptz(6) @map("updated_at")
+  offer     Offer    @relation(fields: [offerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([offerId, sortOrder], map: "uq_offer_images_offer_sort")
+  @@index([offerId], map: "idx_offer_images_offer_id")
+  @@map("offer_images")
+}
+
+model Order {
+  id                String      @id @default(uuid()) @db.Uuid
+  orderNumber       String      @unique @map("order_number")
+  userId            String      @db.Uuid @map("user_id")
+  businessId        String      @db.Uuid @map("business_id")
+  offerId           String      @db.Uuid @map("offer_id")
+  quantity          Int
+  currencyCode      String      @default("ARS") @map("currency_code")
+  unitPriceArs      Int         @map("unit_price_ars")
+  subtotalArs       Int         @map("subtotal_ars")
+  serviceFeeArs     Int         @default(0) @map("service_fee_ars")
+  totalArs          Int         @map("total_ars")
+  status            OrderStatus @default(PENDING_PAYMENT)
+  pickupCode        String?     @map("pickup_code")
+  pickupQrTokenHash String?     @map("pickup_qr_token_hash")
+  reservedAt        DateTime    @default(now()) @db.Timestamptz(6) @map("reserved_at")
+  confirmedAt       DateTime?   @db.Timestamptz(6) @map("confirmed_at")
+  cancelledAt       DateTime?   @db.Timestamptz(6) @map("cancelled_at")
+  cancelReason      String?     @map("cancel_reason")
+  pickedUpAt        DateTime?   @db.Timestamptz(6) @map("picked_up_at")
+  noShowAt          DateTime?   @db.Timestamptz(6) @map("no_show_at")
+  metadata          Json?
+  createdAt         DateTime    @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt         DateTime    @updatedAt @db.Timestamptz(6) @map("updated_at")
+  deletedAt         DateTime?   @db.Timestamptz(6) @map("deleted_at")
+  user              User        @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  business          Business    @relation(fields: [businessId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  offer             Offer       @relation(fields: [offerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  payments          Payment[]
+  review            Review?
+  refunds           Refund[]
+
+  @@index([userId, createdAt], map: "idx_orders_user_created_at")
+  @@index([businessId, createdAt], map: "idx_orders_business_created_at")
+  @@index([offerId, createdAt], map: "idx_orders_offer_created_at")
+  @@index([status, createdAt], map: "idx_orders_status_created_at")
+  @@map("orders")
+}
+
+model Payment {
+  id                   String          @id @default(uuid()) @db.Uuid
+  orderId              String          @db.Uuid @map("order_id")
+  userId               String          @db.Uuid @map("user_id")
+  provider             PaymentProvider
+  providerPaymentId    String?         @map("provider_payment_id")
+  providerPreferenceId String?         @map("provider_preference_id")
+  idempotencyKey       String          @unique @map("idempotency_key")
+  amountArs            Int             @map("amount_ars")
+  currencyCode         String          @default("ARS") @map("currency_code")
+  status               PaymentStatus   @default(PENDING)
+  paymentMethod        String?         @map("payment_method")
+  installments         Int?
+  metadata             Json?
+  lastWebhookAt        DateTime?       @db.Timestamptz(6) @map("last_webhook_at")
+  authorizedAt         DateTime?       @db.Timestamptz(6) @map("authorized_at")
+  capturedAt           DateTime?       @db.Timestamptz(6) @map("captured_at")
+  failedAt             DateTime?       @db.Timestamptz(6) @map("failed_at")
+  cancelledAt          DateTime?       @db.Timestamptz(6) @map("cancelled_at")
+  refundedAt           DateTime?       @db.Timestamptz(6) @map("refunded_at")
+  createdAt            DateTime        @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt            DateTime        @updatedAt @db.Timestamptz(6) @map("updated_at")
+  deletedAt            DateTime?       @db.Timestamptz(6) @map("deleted_at")
+  order                Order           @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  user                 User            @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  refunds              Refund[]
+
+  @@unique([provider, providerPaymentId], map: "uq_payments_provider_external")
+  @@index([orderId], map: "idx_payments_order_id")
+  @@index([userId, createdAt], map: "idx_payments_user_created_at")
+  @@index([status, createdAt], map: "idx_payments_status_created_at")
+  @@map("payments")
+}
+
+model Favorite {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @db.Uuid @map("user_id")
+  businessId String    @db.Uuid @map("business_id")
+  createdAt  DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt  DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+  deletedAt  DateTime? @db.Timestamptz(6) @map("deleted_at")
+  user       User      @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([userId, businessId], map: "uq_favorites_user_business")
+  @@index([userId, createdAt], map: "idx_favorites_user_created_at")
+  @@index([businessId], map: "idx_favorites_business_id")
+  @@map("favorites")
+}
+
+model Review {
+  id         String    @id @default(uuid()) @db.Uuid
+  orderId    String    @unique @db.Uuid @map("order_id")
+  offerId    String    @db.Uuid @map("offer_id")
+  businessId String    @db.Uuid @map("business_id")
+  userId     String    @db.Uuid @map("user_id")
+  rating     Int
+  title      String?
+  body       String?
+  createdAt  DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt  DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+  deletedAt  DateTime? @db.Timestamptz(6) @map("deleted_at")
+  order      Order     @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  offer      Offer     @relation(fields: [offerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([businessId, createdAt], map: "idx_reviews_business_created_at")
+  @@index([offerId, createdAt], map: "idx_reviews_offer_created_at")
+  @@index([userId, createdAt], map: "idx_reviews_user_created_at")
+  @@map("reviews")
+}
+
+model Notification {
+  id          String              @id @default(uuid()) @db.Uuid
+  userId      String              @db.Uuid @map("user_id")
+  type        NotificationType
+  channel     NotificationChannel @default(PUSH)
+  status      NotificationStatus  @default(QUEUED)
+  title       String
+  body        String
+  payload     Json?
+  scheduledAt DateTime?           @db.Timestamptz(6) @map("scheduled_at")
+  sentAt      DateTime?           @db.Timestamptz(6) @map("sent_at")
+  deliveredAt DateTime?           @db.Timestamptz(6) @map("delivered_at")
+  readAt      DateTime?           @db.Timestamptz(6) @map("read_at")
+  failedAt    DateTime?           @db.Timestamptz(6) @map("failed_at")
+  createdAt   DateTime            @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt   DateTime            @updatedAt @db.Timestamptz(6) @map("updated_at")
+  deletedAt   DateTime?           @db.Timestamptz(6) @map("deleted_at")
+  user        User                @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([userId, status, createdAt], map: "idx_notifications_user_status_created_at")
+  @@index([type, createdAt], map: "idx_notifications_type_created_at")
+  @@map("notifications")
+}
+
+model Session {
+  id               String        @id @default(uuid()) @db.Uuid
+  userId           String        @db.Uuid @map("user_id")
+  refreshTokenHash String        @unique @map("refresh_token_hash")
+  deviceId         String        @map("device_id")
+  deviceName       String?       @map("device_name")
+  platform         String
+  ipAddress        String?       @map("ip_address")
+  userAgent        String?       @map("user_agent")
+  status           SessionStatus @default(ACTIVE)
+  lastActivityAt   DateTime?     @db.Timestamptz(6) @map("last_activity_at")
+  expiresAt        DateTime      @db.Timestamptz(6) @map("expires_at")
+  revokedAt        DateTime?     @db.Timestamptz(6) @map("revoked_at")
+  createdAt        DateTime      @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt        DateTime      @updatedAt @db.Timestamptz(6) @map("updated_at")
+  user             User          @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([userId, deviceId], map: "uq_sessions_user_device")
+  @@index([userId, status], map: "idx_sessions_user_status")
+  @@index([expiresAt], map: "idx_sessions_expires_at")
+  @@index([createdAt], map: "idx_sessions_created_at")
+  @@map("sessions")
+}
+
+model Refund {
+  id               String       @id @default(uuid()) @db.Uuid
+  paymentId        String       @db.Uuid @map("payment_id")
+  orderId          String       @db.Uuid @map("order_id")
+  requestedByUserId String?     @db.Uuid @map("requested_by_user_id")
+  reason           String
+  amountArs        Int          @map("amount_ars")
+  status           RefundStatus @default(REQUESTED)
+  providerRefundId String?      @map("provider_refund_id")
+  providerResponse Json?        @map("provider_response")
+  processedAt      DateTime?    @db.Timestamptz(6) @map("processed_at")
+  createdAt        DateTime     @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt        DateTime     @updatedAt @db.Timestamptz(6) @map("updated_at")
+  deletedAt        DateTime?    @db.Timestamptz(6) @map("deleted_at")
+  payment          Payment      @relation(fields: [paymentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  order            Order        @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  requestedByUser  User?        @relation("RefundRequester", fields: [requestedByUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([paymentId, createdAt], map: "idx_refunds_payment_created_at")
+  @@index([orderId, createdAt], map: "idx_refunds_order_created_at")
+  @@index([status, createdAt], map: "idx_refunds_status_created_at")
+  @@index([requestedByUserId], map: "idx_refunds_requested_by_user_id")
+  @@map("refunds")
+}
+
+model AuditLog {
+  id         String    @id @default(uuid()) @db.Uuid
+  actorUserId String?  @db.Uuid @map("actor_user_id")
+  actorRole  UserRole? @map("actor_role")
+  action     String
+  entityType String    @map("entity_type")
+  entityId   String    @map("entity_id")
+  requestId  String?   @map("request_id")
+  ipAddress  String?   @map("ip_address")
+  userAgent  String?   @map("user_agent")
+  riskScore  Int?      @map("risk_score")
+  metadata   Json?
+  createdAt  DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  actorUser  User?     @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([entityType, entityId, createdAt], map: "idx_audit_logs_entity_created_at")
+  @@index([actorUserId, createdAt], map: "idx_audit_logs_actor_created_at")
+  @@index([action, createdAt], map: "idx_audit_logs_action_created_at")
+  @@map("audit_logs")
+}

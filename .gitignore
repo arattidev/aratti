@@ -1,0 +1,24 @@
+# Node
+node_modules/
+.pnpm-store/
+
+# Build artifacts
+.next/
+dist/
+build/
+coverage/
+.expo/
+.expo-shared/
+
+# Local environment
+.env
+.env.*.local
+
+# Prisma
+prisma/dev.db
+prisma/dev.db-journal
+
+# Editor
+.DS_Store
+.vscode/*.code-snippets
+.vscode/settings.json

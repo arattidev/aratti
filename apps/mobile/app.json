@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "Aratti",
+    "slug": "aratti-mobile",
+    "scheme": "aratti",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#f5f6f7"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.aratti.mobile",
+      "associatedDomains": [
+        "applinks:app.aratti.com"
+      ]
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffd709"
+      },
+      "package": "com.aratti.mobile"
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-web-browser"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "aratti-mobile"
+      }
+    }
+  }
+}
