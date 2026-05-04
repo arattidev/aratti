@@ -1,4 +1,4 @@
-import { prisma } from "@aratti/db";
+import { prisma, type Prisma } from "@aratti/db";
 
 export interface NearbyOffersQuery {
   lat: number;
@@ -16,28 +16,30 @@ export class OffersRepository {
     const latDelta = input.radiusKm / 111;
     const lngDelta = input.radiusKm / (111 * Math.max(Math.cos((input.lat * Math.PI) / 180), 0.2));
 
-    return prisma.offer.findMany({
-      where: {
+    const where: Prisma.OfferWhereInput = {
+      deletedAt: null,
+      status: "ACTIVE",
+      quantityAvailable: { gt: 0 },
+      ...(input.maxPriceArs !== undefined ? { rescuePriceArs: { lte: input.maxPriceArs } } : {}),
+      ...(input.category ? { category: input.category as never } : {}),
+      ...(input.pickupStart ? { pickupStartAt: { gte: new Date(input.pickupStart) } } : {}),
+      pickupEndAt: input.pickupEnd ? { lte: new Date(input.pickupEnd) } : { gte: new Date() },
+      business: {
         deletedAt: null,
-        status: "ACTIVE",
-        quantityAvailable: { gt: 0 },
-        rescuePriceArs: input.maxPriceArs ? { lte: input.maxPriceArs } : undefined,
-        category: input.category ? (input.category as never) : undefined,
-        pickupStartAt: input.pickupStart ? { gte: new Date(input.pickupStart) } : undefined,
-        pickupEndAt: input.pickupEnd ? { lte: new Date(input.pickupEnd) } : { gte: new Date() },
-        business: {
-          deletedAt: null,
-          verificationStatus: "ACTIVE",
-          latitude: {
-            gte: input.lat - latDelta,
-            lte: input.lat + latDelta,
-          },
-          longitude: {
-            gte: input.lng - lngDelta,
-            lte: input.lng + lngDelta,
-          },
+        verificationStatus: "ACTIVE",
+        latitude: {
+          gte: input.lat - latDelta,
+          lte: input.lat + latDelta,
+        },
+        longitude: {
+          gte: input.lng - lngDelta,
+          lte: input.lng + lngDelta,
         },
       },
+    };
+
+    return prisma.offer.findMany({
+      where,
       include: {
         business: true,
         images: {
