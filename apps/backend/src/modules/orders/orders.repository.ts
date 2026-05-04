@@ -1,4 +1,4 @@
-import { prisma } from "@aratti/db";
+import { prisma, type Prisma } from "@aratti/db";
 
 export class OrdersRepository {
   async findOfferForOrder(offerId: string) {
@@ -93,7 +93,7 @@ export class OrdersRepository {
 
   async listUserOrders(input: {
     userId: string;
-    statusFilter?: "active" | "past" | "cancelled";
+    statusFilter: "active" | "past" | "cancelled" | undefined;
     limit: number;
   }) {
     const statusMap: Record<string, string[]> = {
@@ -102,12 +102,14 @@ export class OrdersRepository {
       cancelled: ["CANCELLED", "PAYMENT_EXPIRED"],
     };
 
+    const where: Prisma.OrderWhereInput = {
+      userId: input.userId,
+      deletedAt: null,
+      ...(input.statusFilter ? { status: { in: statusMap[input.statusFilter] as never[] } } : {}),
+    };
+
     return prisma.order.findMany({
-      where: {
-        userId: input.userId,
-        deletedAt: null,
-        status: input.statusFilter ? { in: statusMap[input.statusFilter] as never[] } : undefined,
-      },
+      where,
       include: {
         offer: true,
         business: true,

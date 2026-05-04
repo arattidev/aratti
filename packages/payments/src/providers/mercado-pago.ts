@@ -140,9 +140,9 @@ export class MercadoPagoProvider implements PaymentProvider {
     return {
       shouldAcknowledge: true,
       eventType: payload.action ?? payload.type ?? "unknown",
-      externalPaymentId,
       paymentStatus: "PENDING",
       payload,
+      ...(externalPaymentId ? { externalPaymentId } : {}),
     };
   }
 

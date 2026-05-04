@@ -90,17 +90,29 @@ export class PaymentsService {
       },
     });
 
-    const payment = await this.paymentsRepository.createPayment({
+    const paymentInput: {
+      orderId: string;
+      userId: string;
+      provider: PaymentProviderName;
+      amountArs: number;
+      status: "PENDING" | "REQUIRES_ACTION" | "AUTHORIZED";
+      idempotencyKey: string;
+      providerPaymentId?: string;
+      providerPreferenceId?: string;
+      metadata?: Record<string, unknown>;
+    } = {
       orderId: order.id,
       userId: input.userId,
       provider: input.provider,
       amountArs: order.totalArs,
       status: createdIntent.status,
       idempotencyKey: input.idempotencyKey,
-      providerPaymentId: createdIntent.externalPaymentId,
-      providerPreferenceId: createdIntent.externalPreferenceId,
       metadata: createdIntent.raw as Record<string, unknown>,
-    });
+      ...(createdIntent.externalPaymentId ? { providerPaymentId: createdIntent.externalPaymentId } : {}),
+      ...(createdIntent.externalPreferenceId ? { providerPreferenceId: createdIntent.externalPreferenceId } : {}),
+    };
+
+    const payment = await this.paymentsRepository.createPayment(paymentInput);
 
     await createAuditLog({
       actorUserId: input.userId,
