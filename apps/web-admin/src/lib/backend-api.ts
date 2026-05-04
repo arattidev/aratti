@@ -8,6 +8,7 @@ export async function fetchBackend<T>(
     token?: string | null;
   } = {},
 ): Promise<T> {
+  const requestBody = options.body ? JSON.stringify(options.body) : null;
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: options.method ?? "GET",
     cache: "no-store",
@@ -15,7 +16,7 @@ export async function fetchBackend<T>(
       "Content-Type": "application/json",
       ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}),
     },
-    body: options.body ? JSON.stringify(options.body) : undefined,
+    body: requestBody,
   });
 
   if (!response.ok) {
