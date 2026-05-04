@@ -4,10 +4,10 @@ export interface NearbyOffersQuery {
   lat: number;
   lng: number;
   radiusKm: number;
-  category?: string;
-  maxPriceArs?: number;
-  pickupStart?: string;
-  pickupEnd?: string;
+  category: string | undefined;
+  maxPriceArs: number | undefined;
+  pickupStart: string | undefined;
+  pickupEnd: string | undefined;
   limit: number;
 }
 

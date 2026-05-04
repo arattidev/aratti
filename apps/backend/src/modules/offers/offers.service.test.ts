@@ -48,6 +48,10 @@ describe("OffersService", () => {
       lat: -34.6037,
       lng: -58.3816,
       radiusKm: 20,
+      category: undefined,
+      maxPriceArs: undefined,
+      pickupStart: undefined,
+      pickupEnd: undefined,
       limit: 10,
     });
 

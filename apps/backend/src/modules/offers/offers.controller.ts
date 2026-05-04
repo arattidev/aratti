@@ -11,7 +11,16 @@ export async function getNearbyOffersController(request: Request) {
   await applyApiGuard("offers.nearby");
   const url = new URL(request.url);
   const query = parseQuery(url.searchParams, nearbyOffersQuerySchema);
-  const data = await offersService.getNearbyOffers(query);
+  const data = await offersService.getNearbyOffers({
+    lat: query.lat,
+    lng: query.lng,
+    radiusKm: query.radiusKm,
+    category: query.category,
+    maxPriceArs: query.maxPriceArs,
+    pickupStart: query.pickupStart,
+    pickupEnd: query.pickupEnd,
+    limit: query.limit,
+  });
   return apiSuccess(data);
 }
 
