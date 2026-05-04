@@ -10,9 +10,17 @@ datasource db {
 
 enum UserRole {
   USER
+  BUSINESS
   BUSINESS_OWNER
   BUSINESS_STAFF
   ADMIN
+}
+
+enum AuthProvider {
+  PASSWORD
+  GOOGLE
+  MAGIC_LINK
+  CLERK
 }
 
 enum AccountStatus {
@@ -103,6 +111,24 @@ enum RefundStatus {
   CANCELLED
 }
 
+enum AvailabilityStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+enum PayoutProvider {
+  MOCK
+  STRIPE
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+}
+
 enum NotificationType {
   ORDER_CONFIRMED
   PICKUP_REMINDER
@@ -137,6 +163,8 @@ model User {
   id                  String           @id @default(uuid()) @db.Uuid
   clerkUserId         String?          @unique @map("clerk_user_id")
   email               String           @unique
+  passwordHash        String?          @map("password_hash")
+  authProvider        AuthProvider     @default(PASSWORD) @map("auth_provider")
   emailVerifiedAt     DateTime?        @db.Timestamptz(6) @map("email_verified_at")
   phone               String?          @unique
   firstName           String?          @map("first_name")
@@ -158,6 +186,7 @@ model User {
   reviews             Review[]
   notifications       Notification[]
   sessions            Session[]
+  magicLinks          MagicLinkToken[]
   auditLogs           AuditLog[]       @relation("AuditActor")
   requestedRefunds    Refund[]         @relation("RefundRequester")
 
@@ -198,7 +227,9 @@ model Business {
   ownerUser          User              @relation("BusinessOwner", fields: [ownerUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   members            BusinessMember[]
   offers             Offer[]
+  availabilities     BusinessAvailability[]
   orders             Order[]
+  payouts            Payout[]
   favorites          Favorite[]
   reviews            Review[]
 
@@ -256,6 +287,7 @@ model Offer {
   deletedAt         DateTime?     @db.Timestamptz(6) @map("deleted_at")
   business          Business      @relation(fields: [businessId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   images            OfferImage[]
+  availabilities    BusinessAvailability[]
   orders            Order[]
   reviews           Review[]
 
@@ -282,6 +314,26 @@ model OfferImage {
   @@unique([offerId, sortOrder], map: "uq_offer_images_offer_sort")
   @@index([offerId], map: "idx_offer_images_offer_id")
   @@map("offer_images")
+}
+
+model BusinessAvailability {
+  id                String             @id @default(uuid()) @db.Uuid
+  businessId        String             @db.Uuid @map("business_id")
+  offerId           String             @db.Uuid @map("offer_id")
+  date              DateTime           @db.Date
+  quantityPublished Int                @map("quantity_published")
+  quantityAvailable Int                @map("quantity_available")
+  status            AvailabilityStatus @default(PUBLISHED)
+  notes             String?
+  createdAt         DateTime           @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt         DateTime           @updatedAt @db.Timestamptz(6) @map("updated_at")
+  business          Business           @relation(fields: [businessId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  offer             Offer              @relation(fields: [offerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([businessId, offerId, date], map: "uq_business_availability_scope_day")
+  @@index([businessId, date], map: "idx_business_availability_business_date")
+  @@index([status, date], map: "idx_business_availability_status_date")
+  @@map("business_availability")
 }
 
 model Order {
@@ -442,6 +494,41 @@ model Session {
   @@index([expiresAt], map: "idx_sessions_expires_at")
   @@index([createdAt], map: "idx_sessions_created_at")
   @@map("sessions")
+}
+
+model MagicLinkToken {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid @map("user_id")
+  email       String
+  tokenHash   String    @unique @map("token_hash")
+  expiresAt   DateTime  @db.Timestamptz(6) @map("expires_at")
+  consumedAt  DateTime? @db.Timestamptz(6) @map("consumed_at")
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId, expiresAt], map: "idx_magic_link_tokens_user_exp")
+  @@index([email], map: "idx_magic_link_tokens_email")
+  @@map("magic_link_tokens")
+}
+
+model Payout {
+  id            String         @id @default(uuid()) @db.Uuid
+  businessId    String         @db.Uuid @map("business_id")
+  amountArs     Int            @map("amount_ars")
+  currencyCode  String         @default("ARS") @map("currency_code")
+  provider      PayoutProvider @default(MOCK)
+  status        PayoutStatus   @default(PENDING)
+  reference     String?
+  scheduledFor  DateTime?      @db.Timestamptz(6) @map("scheduled_for")
+  paidAt        DateTime?      @db.Timestamptz(6) @map("paid_at")
+  metadata      Json?
+  createdAt     DateTime       @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt     DateTime       @updatedAt @db.Timestamptz(6) @map("updated_at")
+  business      Business       @relation(fields: [businessId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([businessId, createdAt], map: "idx_payouts_business_created_at")
+  @@index([status, createdAt], map: "idx_payouts_status_created_at")
+  @@map("payouts")
 }
 
 model Refund {

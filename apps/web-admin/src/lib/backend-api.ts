@@ -1,11 +1,21 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? process.env.API_BASE_URL ?? "http://localhost:3000";
 
-export async function fetchBackend<T>(path: string): Promise<T> {
+export async function fetchBackend<T>(
+  path: string,
+  options: {
+    method?: "GET" | "POST" | "PATCH";
+    body?: unknown;
+    token?: string | null;
+  } = {},
+): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: options.method ?? "GET",
     cache: "no-store",
     headers: {
       "Content-Type": "application/json",
+      ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}),
     },
+    body: options.body ? JSON.stringify(options.body) : undefined,
   });
 
   if (!response.ok) {

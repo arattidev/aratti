@@ -1,12 +1,20 @@
 import {
+  createBusinessPayoutBodySchema,
   businessOrdersQuerySchema,
   createBusinessOfferBodySchema,
+  listBusinessAvailabilityQuerySchema,
+  listBusinessOffersQuerySchema,
+  listBusinessPayoutsQuerySchema,
+  updateBusinessAvailabilityBodySchema,
+  updateBusinessAvailabilityParamsSchema,
   updateBusinessOfferBodySchema,
   updateBusinessOfferParamsSchema,
+  upsertBusinessAvailabilityBodySchema,
 } from "@aratti/api";
 import type { AuthContext } from "@aratti/auth";
 
 import { createAuditLog } from "../../lib/audit";
+import { env } from "../../lib/env";
 import { HttpError } from "../../lib/errors";
 import { assertBusinessAccess } from "../../lib/security/auth";
 import { BusinessRepository } from "./business.repository";
@@ -126,6 +134,225 @@ export class BusinessService {
         createdAt: order.createdAt.toISOString(),
       })),
       nextCursor: null,
+    };
+  }
+
+  async listBusinessOffers(context: AuthContext, query: unknown) {
+    const parsed = listBusinessOffersQuerySchema.parse(query);
+
+    const businessId = context.businessIds?.[0];
+    if (!businessId) {
+      throw new HttpError(403, "forbidden", "No business assigned");
+    }
+
+    assertBusinessAccess(context, businessId);
+
+    const offers = await this.businessRepository.listBusinessOffers({
+      businessId,
+      status: parsed.status,
+      limit: parsed.limit,
+    });
+
+    return {
+      data: offers.map((offer) => ({
+        id: offer.id,
+        businessId: offer.businessId,
+        title: offer.title,
+        category: offer.category,
+        status: offer.status,
+        rescuePriceArs: offer.rescuePriceArs,
+        originalPriceArs: offer.originalPriceArs,
+        quantityTotal: offer.quantityTotal,
+        quantityAvailable: offer.quantityAvailable,
+        pickupStartAt: offer.pickupStartAt.toISOString(),
+        pickupEndAt: offer.pickupEndAt.toISOString(),
+        imageUrl: offer.images[0]?.imageUrl ?? null,
+        createdAt: offer.createdAt.toISOString(),
+      })),
+    };
+  }
+
+  async upsertDailyAvailability(context: AuthContext, input: unknown) {
+    const payload = upsertBusinessAvailabilityBodySchema.parse(input);
+    assertBusinessAccess(context, payload.businessId);
+
+    const offer = await this.businessRepository.findOfferById(payload.offerId);
+    if (!offer || offer.businessId !== payload.businessId) {
+      throw new HttpError(404, "offer_not_found", "Offer not found for this business");
+    }
+
+    const date = new Date(`${payload.date}T00:00:00.000Z`);
+    const availability = await this.businessRepository.upsertAvailability({
+      businessId: payload.businessId,
+      offerId: payload.offerId,
+      date,
+      quantityPublished: payload.quantityPublished,
+      quantityAvailable: payload.quantityAvailable ?? payload.quantityPublished,
+      status: payload.status,
+      notes: payload.notes,
+    });
+
+    await createAuditLog({
+      actorUserId: context.userId,
+      actorRole: context.role,
+      action: "business_availability_upserted",
+      entityType: "business_availability",
+      entityId: availability.id,
+      metadata: {
+        businessId: payload.businessId,
+        offerId: payload.offerId,
+        date: payload.date,
+      },
+    });
+
+    return {
+      id: availability.id,
+      businessId: availability.businessId,
+      offerId: availability.offerId,
+      offerTitle: availability.offer.title,
+      date: availability.date.toISOString().slice(0, 10),
+      quantityPublished: availability.quantityPublished,
+      quantityAvailable: availability.quantityAvailable,
+      status: availability.status,
+      notes: availability.notes,
+    };
+  }
+
+  async listDailyAvailability(context: AuthContext, query: unknown) {
+    const parsed = listBusinessAvailabilityQuerySchema.parse(query);
+    const businessId = context.businessIds?.[0];
+    if (!businessId) {
+      throw new HttpError(403, "forbidden", "No business assigned");
+    }
+
+    assertBusinessAccess(context, businessId);
+    const from = parsed.from ? new Date(`${parsed.from}T00:00:00.000Z`) : undefined;
+    const to = parsed.to ? new Date(`${parsed.to}T23:59:59.999Z`) : undefined;
+
+    const rows = await this.businessRepository.listBusinessAvailability({
+      businessId,
+      from,
+      to,
+      limit: parsed.limit,
+    });
+
+    return {
+      data: rows.map((row) => ({
+        id: row.id,
+        offerId: row.offerId,
+        offerTitle: row.offer.title,
+        date: row.date.toISOString().slice(0, 10),
+        quantityPublished: row.quantityPublished,
+        quantityAvailable: row.quantityAvailable,
+        status: row.status,
+        notes: row.notes,
+      })),
+    };
+  }
+
+  async updateDailyAvailability(context: AuthContext, params: { id: string }, input: unknown) {
+    const parsedParams = updateBusinessAvailabilityParamsSchema.parse(params);
+    const payload = updateBusinessAvailabilityBodySchema.parse(input);
+
+    const current = await this.businessRepository.findAvailabilityById(parsedParams.id);
+    if (!current) {
+      throw new HttpError(404, "availability_not_found", "Availability record not found");
+    }
+
+    assertBusinessAccess(context, current.businessId);
+    const updated = await this.businessRepository.updateAvailability({
+      id: current.id,
+      ...payload,
+    });
+
+    await createAuditLog({
+      actorUserId: context.userId,
+      actorRole: context.role,
+      action: "business_availability_updated",
+      entityType: "business_availability",
+      entityId: updated.id,
+    });
+
+    return {
+      id: updated.id,
+      offerId: updated.offerId,
+      offerTitle: updated.offer.title,
+      date: updated.date.toISOString().slice(0, 10),
+      quantityPublished: updated.quantityPublished,
+      quantityAvailable: updated.quantityAvailable,
+      status: updated.status,
+      notes: updated.notes,
+    };
+  }
+
+  async createPayout(context: AuthContext, input: unknown) {
+    const payload = createBusinessPayoutBodySchema.parse(input);
+    assertBusinessAccess(context, payload.businessId);
+
+    const isMock = env.PAYMENTS_MODE === "MOCK";
+
+    const payout = await this.businessRepository.createPayout({
+      businessId: payload.businessId,
+      amountArs: payload.amountArs,
+      provider: isMock ? "MOCK" : "STRIPE",
+      status: isMock ? "SUCCEEDED" : "PENDING",
+      reference: isMock ? `mock_payout_${Date.now()}` : undefined,
+      metadata: {
+        mode: env.PAYMENTS_MODE,
+      },
+      paidAt: isMock ? new Date() : undefined,
+    });
+
+    await createAuditLog({
+      actorUserId: context.userId,
+      actorRole: context.role,
+      action: "business_payout_created",
+      entityType: "payout",
+      entityId: payout.id,
+      metadata: {
+        businessId: payload.businessId,
+        amountArs: payload.amountArs,
+        mode: env.PAYMENTS_MODE,
+      },
+    });
+
+    return {
+      id: payout.id,
+      amountArs: payout.amountArs,
+      currencyCode: payout.currencyCode,
+      provider: payout.provider,
+      status: payout.status,
+      reference: payout.reference,
+      paidAt: payout.paidAt?.toISOString() ?? null,
+      createdAt: payout.createdAt.toISOString(),
+    };
+  }
+
+  async listPayouts(context: AuthContext, query: unknown) {
+    const parsed = listBusinessPayoutsQuerySchema.parse(query);
+    const businessId = context.businessIds?.[0];
+    if (!businessId) {
+      throw new HttpError(403, "forbidden", "No business assigned");
+    }
+
+    assertBusinessAccess(context, businessId);
+    const payouts = await this.businessRepository.listPayouts({
+      businessId,
+      status: parsed.status,
+      limit: parsed.limit,
+    });
+
+    return {
+      data: payouts.map((payout) => ({
+        id: payout.id,
+        amountArs: payout.amountArs,
+        currencyCode: payout.currencyCode,
+        provider: payout.provider,
+        status: payout.status,
+        reference: payout.reference,
+        paidAt: payout.paidAt?.toISOString() ?? null,
+        createdAt: payout.createdAt.toISOString(),
+      })),
     };
   }
 }

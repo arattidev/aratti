@@ -31,6 +31,45 @@ export class PaymentsService {
       };
     }
 
+    if (env.PAYMENTS_MODE === "MOCK") {
+      const payment = await this.paymentsRepository.createPayment({
+        orderId: order.id,
+        userId: input.userId,
+        provider: input.provider,
+        amountArs: order.totalArs,
+        status: "SUCCEEDED",
+        idempotencyKey: input.idempotencyKey,
+        providerPaymentId: `mock_pi_${order.id}`,
+        providerPreferenceId: `mock_pref_${order.id}`,
+        metadata: {
+          mode: "MOCK",
+        },
+      });
+
+      await this.paymentsRepository.updateOrderStatus(order.id, "CONFIRMED");
+
+      await createAuditLog({
+        actorUserId: input.userId,
+        actorRole: "USER",
+        action: "payment_intent_created",
+        entityType: "payment",
+        entityId: payment.id,
+        metadata: {
+          provider: input.provider,
+          orderId: order.id,
+          mode: "MOCK",
+        },
+      });
+
+      return {
+        paymentId: payment.id,
+        provider: payment.provider,
+        status: payment.status,
+        checkoutUrl: `https://mock-payments.local/checkout/${payment.id}`,
+        clientSecret: `mock_cs_${payment.id}`,
+      };
+    }
+
     const provider = createPaymentProvider(input.provider, {
       mercadoPago: {
         accessToken: env.MERCADO_PAGO_ACCESS_TOKEN ?? "",
@@ -88,6 +127,10 @@ export class PaymentsService {
     rawBody: string;
     headers: Record<string, string | undefined>;
   }) {
+    if (env.PAYMENTS_MODE === "MOCK") {
+      return { received: true, ignored: true, mode: "MOCK" };
+    }
+
     const provider = createPaymentProvider("MERCADO_PAGO", {
       mercadoPago: {
         accessToken: env.MERCADO_PAGO_ACCESS_TOKEN ?? "",

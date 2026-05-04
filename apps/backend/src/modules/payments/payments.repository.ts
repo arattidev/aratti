@@ -34,7 +34,7 @@ export class PaymentsRepository {
     userId: string;
     provider: PaymentProvider;
     amountArs: number;
-    status: "PENDING" | "REQUIRES_ACTION" | "AUTHORIZED";
+    status: "PENDING" | "REQUIRES_ACTION" | "AUTHORIZED" | "SUCCEEDED";
     idempotencyKey: string;
     providerPaymentId?: string;
     providerPreferenceId?: string;

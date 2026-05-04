@@ -2,9 +2,10 @@ import type { UserRole } from "@aratti/types";
 
 export const roleHierarchy: Record<UserRole, number> = {
   USER: 1,
-  BUSINESS_STAFF: 2,
-  BUSINESS_OWNER: 3,
-  ADMIN: 4,
+  BUSINESS: 2,
+  BUSINESS_STAFF: 3,
+  BUSINESS_OWNER: 4,
+  ADMIN: 5,
 };
 
 export function hasMinimumRole(currentRole: UserRole, requiredRole: UserRole): boolean {
@@ -12,5 +13,5 @@ export function hasMinimumRole(currentRole: UserRole, requiredRole: UserRole): b
 }
 
 export function canManageBusiness(role: UserRole): boolean {
-  return role === "BUSINESS_OWNER" || role === "BUSINESS_STAFF" || role === "ADMIN";
+  return role === "BUSINESS" || role === "BUSINESS_OWNER" || role === "BUSINESS_STAFF" || role === "ADMIN";
 }

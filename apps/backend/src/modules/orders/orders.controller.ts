@@ -18,7 +18,7 @@ export async function createOrderController(request: Request) {
 
 export async function pickupOrderController(request: Request, params: { id: string }) {
   await applyApiGuard("orders.pickup");
-  const context = await requireRoleContext("BUSINESS_STAFF");
+  const context = await requireRoleContext("BUSINESS");
   const parsedParams = pickupOrderParamsSchema.parse(params);
   const body = await parseBody(request, pickupOrderBodySchema);
   const data = await ordersService.pickupOrder(context, parsedParams, body);

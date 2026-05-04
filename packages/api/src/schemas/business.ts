@@ -31,3 +31,45 @@ export const businessOrdersQuerySchema = z.object({
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
+
+export const listBusinessOffersQuerySchema = z.object({
+  status: z.enum(["DRAFT", "ACTIVE", "PAUSED", "SOLD_OUT", "EXPIRED", "ARCHIVED"]).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(40),
+});
+
+export const upsertBusinessAvailabilityBodySchema = z.object({
+  businessId: uuidSchema,
+  offerId: uuidSchema,
+  date: z.string().date(),
+  quantityPublished: z.number().int().min(0).max(10000),
+  quantityAvailable: z.number().int().min(0).max(10000).optional(),
+  status: z.enum(["DRAFT", "PUBLISHED", "CLOSED"]).default("PUBLISHED"),
+  notes: z.string().max(280).optional(),
+});
+
+export const listBusinessAvailabilityQuerySchema = z.object({
+  from: z.string().date().optional(),
+  to: z.string().date().optional(),
+  limit: z.coerce.number().int().min(1).max(120).default(30),
+});
+
+export const updateBusinessAvailabilityParamsSchema = z.object({
+  id: uuidSchema,
+});
+
+export const updateBusinessAvailabilityBodySchema = z.object({
+  quantityPublished: z.number().int().min(0).max(10000).optional(),
+  quantityAvailable: z.number().int().min(0).max(10000).optional(),
+  status: z.enum(["DRAFT", "PUBLISHED", "CLOSED"]).optional(),
+  notes: z.string().max(280).optional(),
+});
+
+export const createBusinessPayoutBodySchema = z.object({
+  businessId: uuidSchema,
+  amountArs: z.number().int().positive(),
+});
+
+export const listBusinessPayoutsQuerySchema = z.object({
+  status: z.enum(["PENDING", "PROCESSING", "SUCCEEDED", "FAILED"]).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(30),
+});

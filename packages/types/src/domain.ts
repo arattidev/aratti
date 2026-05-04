@@ -1,6 +1,6 @@
 export type UUID = string;
 
-export type UserRole = "USER" | "BUSINESS_OWNER" | "BUSINESS_STAFF" | "ADMIN";
+export type UserRole = "USER" | "BUSINESS" | "BUSINESS_OWNER" | "BUSINESS_STAFF" | "ADMIN";
 
 export type OfferStatus = "DRAFT" | "ACTIVE" | "PAUSED" | "SOLD_OUT" | "EXPIRED" | "ARCHIVED";
 

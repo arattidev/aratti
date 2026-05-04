@@ -5,7 +5,7 @@ import { mmkvStorage } from "../lib/mmkv";
 
 interface SessionState {
   userId: string | null;
-  role: "USER" | "BUSINESS_OWNER" | "BUSINESS_STAFF" | "ADMIN" | null;
+  role: "USER" | "BUSINESS" | "BUSINESS_OWNER" | "BUSINESS_STAFF" | "ADMIN" | null;
   isOnboarded: boolean;
   setSession: (payload: { userId: string; role: SessionState["role"] }) => void;
   clearSession: () => void;
