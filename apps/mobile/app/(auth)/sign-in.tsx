@@ -6,7 +6,7 @@ import { z } from "zod";
 
 import { HarvestScreen } from "../../src/components/harvest-screen";
 import { ImpactButton } from "../../src/components/impact-button";
-import { APP_STRINGS } from "../../src/lib/constants";
+import { API_BASE_URL, APP_STRINGS } from "../../src/lib/constants";
 import { mobileApi } from "../../src/lib/api-client";
 import { useSessionStore } from "../../src/stores/session-store";
 import { theme } from "../../src/theme";
@@ -32,19 +32,33 @@ export default function SignInScreen() {
 
   const onSubmit = form.handleSubmit(async (values) => {
     const clerkUserId = `mock_${values.email.toLowerCase()}`;
-    const result = await mobileApi.login({
-      clerkUserId,
-      email: values.email,
-      firstName: values.firstName,
-      locale: "es-AR",
-    });
 
-    setSession({
-      userId: result.userId,
-      role: result.role,
-    });
+    try {
+      console.log("[auth] Login request", {
+        baseUrl: API_BASE_URL,
+        clerkUserId,
+        email: values.email,
+      });
 
-    router.replace("/(tabs)/home");
+      const result = await mobileApi.login({
+        clerkUserId,
+        email: values.email,
+        firstName: values.firstName,
+        locale: "es-AR",
+      });
+
+      setSession({
+        userId: result.userId,
+        role: result.role,
+      });
+
+      router.replace("/(tabs)/home");
+    } catch (error) {
+      console.error("[auth] Login failed", {
+        baseUrl: API_BASE_URL,
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
   });
 
   return (
