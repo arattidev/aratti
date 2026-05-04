@@ -23,6 +23,7 @@ Marketplace mobile-first para rescate de comida en Argentina/LATAM (inspirado en
 - Database: Neon PostgreSQL
 - Auth: Clerk (Apple, Google, Email OTP)
 - Payments: Mercado Pago + Apple Pay abstraction, Stripe-ready
+- Dev bypass modes: internal auth/session tokens and mock payouts/payments
 - State: Zustand + TanStack Query + MMKV + SecureStore
 - Validation: Zod + React Hook Form
 - Security: rate limit, signed webhooks, audit logs, authz by ownership

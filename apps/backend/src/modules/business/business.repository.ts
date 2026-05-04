@@ -1,4 +1,4 @@
-import { prisma } from "@aratti/db";
+import { prisma, type Prisma } from "@aratti/db";
 
 export class BusinessRepository {
   async findBusinessById(businessId: string) {
@@ -99,28 +99,30 @@ export class BusinessRepository {
       return tx.offer.update({
         where: { id: input.offerId },
         data: {
-          title: input.title,
-          description: input.description,
-          category: input.category as never,
-          originalPriceArs: input.originalPriceArs,
-          rescuePriceArs: input.rescuePriceArs,
-          quantityTotal: input.quantityTotal,
-          pickupStartAt: input.pickupStartAt,
-          pickupEndAt: input.pickupEndAt,
-          status: input.status,
-          tags: input.tags,
+          ...(input.title !== undefined ? { title: input.title } : {}),
+          ...(input.description !== undefined ? { description: input.description } : {}),
+          ...(input.category !== undefined ? { category: input.category as never } : {}),
+          ...(input.originalPriceArs !== undefined ? { originalPriceArs: input.originalPriceArs } : {}),
+          ...(input.rescuePriceArs !== undefined ? { rescuePriceArs: input.rescuePriceArs } : {}),
+          ...(input.quantityTotal !== undefined ? { quantityTotal: input.quantityTotal } : {}),
+          ...(input.pickupStartAt !== undefined ? { pickupStartAt: input.pickupStartAt } : {}),
+          ...(input.pickupEndAt !== undefined ? { pickupEndAt: input.pickupEndAt } : {}),
+          ...(input.status !== undefined ? { status: input.status } : {}),
+          ...(input.tags !== undefined ? { tags: input.tags } : {}),
         },
       });
     });
   }
 
-  async listBusinessOrders(input: { businessId: string; status?: string; limit: number }) {
+  async listBusinessOrders(input: { businessId: string; status: string | undefined; limit: number }) {
+    const where: Prisma.OrderWhereInput = {
+      businessId: input.businessId,
+      deletedAt: null,
+      ...(input.status ? { status: input.status as never } : {}),
+    };
+
     return prisma.order.findMany({
-      where: {
-        businessId: input.businessId,
-        deletedAt: null,
-        status: input.status ? (input.status as never) : undefined,
-      },
+      where,
       include: {
         offer: true,
         user: {
@@ -139,13 +141,15 @@ export class BusinessRepository {
     });
   }
 
-  async listBusinessOffers(input: { businessId: string; status?: string; limit: number }) {
+  async listBusinessOffers(input: { businessId: string; status: string | undefined; limit: number }) {
+    const where: Prisma.OfferWhereInput = {
+      businessId: input.businessId,
+      deletedAt: null,
+      ...(input.status ? { status: input.status as never } : {}),
+    };
+
     return prisma.offer.findMany({
-      where: {
-        businessId: input.businessId,
-        deletedAt: null,
-        status: input.status ? (input.status as never) : undefined,
-      },
+      where,
       include: {
         images: {
           orderBy: { sortOrder: "asc" },
@@ -180,7 +184,7 @@ export class BusinessRepository {
         quantityPublished: input.quantityPublished,
         quantityAvailable: input.quantityAvailable,
         status: input.status,
-        notes: input.notes,
+        notes: input.notes ?? null,
       },
       create: {
         businessId: input.businessId,
@@ -189,7 +193,7 @@ export class BusinessRepository {
         quantityPublished: input.quantityPublished,
         quantityAvailable: input.quantityAvailable,
         status: input.status,
-        notes: input.notes,
+        notes: input.notes ?? null,
       },
       include: {
         offer: {
@@ -202,14 +206,15 @@ export class BusinessRepository {
     });
   }
 
-  async listBusinessAvailability(input: { businessId: string; from?: Date; to?: Date; limit: number }) {
+  async listBusinessAvailability(input: { businessId: string; from: Date | undefined; to: Date | undefined; limit: number }) {
+    const dateFilter: { gte?: Date; lte?: Date } = {};
+    if (input.from) dateFilter.gte = input.from;
+    if (input.to) dateFilter.lte = input.to;
+
     return prisma.businessAvailability.findMany({
       where: {
         businessId: input.businessId,
-        date: {
-          gte: input.from,
-          lte: input.to,
-        },
+        ...(input.from || input.to ? { date: dateFilter } : {}),
       },
       include: {
         offer: {
@@ -240,10 +245,10 @@ export class BusinessRepository {
     return prisma.businessAvailability.update({
       where: { id: input.id },
       data: {
-        quantityPublished: input.quantityPublished,
-        quantityAvailable: input.quantityAvailable,
-        status: input.status,
-        notes: input.notes,
+        ...(input.quantityPublished !== undefined ? { quantityPublished: input.quantityPublished } : {}),
+        ...(input.quantityAvailable !== undefined ? { quantityAvailable: input.quantityAvailable } : {}),
+        ...(input.status !== undefined ? { status: input.status } : {}),
+        ...(input.notes !== undefined ? { notes: input.notes } : {}),
       },
       include: {
         offer: {
@@ -257,25 +262,32 @@ export class BusinessRepository {
   }
 
   async createPayout(input: { businessId: string; amountArs: number; provider: "MOCK" | "STRIPE"; status: "PENDING" | "PROCESSING" | "SUCCEEDED" | "FAILED"; reference?: string; metadata?: Record<string, unknown>; paidAt?: Date }) {
+    const data: Prisma.PayoutUncheckedCreateInput = {
+      businessId: input.businessId,
+      amountArs: input.amountArs,
+      provider: input.provider,
+      status: input.status,
+      reference: input.reference ?? null,
+      paidAt: input.paidAt ?? null,
+    };
+
+    if (input.metadata !== undefined) {
+      data.metadata = input.metadata as Prisma.InputJsonValue;
+    }
+
     return prisma.payout.create({
-      data: {
-        businessId: input.businessId,
-        amountArs: input.amountArs,
-        provider: input.provider,
-        status: input.status,
-        reference: input.reference,
-        metadata: input.metadata,
-        paidAt: input.paidAt,
-      },
+      data,
     });
   }
 
-  async listPayouts(input: { businessId: string; status?: "PENDING" | "PROCESSING" | "SUCCEEDED" | "FAILED"; limit: number }) {
+  async listPayouts(input: { businessId: string; status: "PENDING" | "PROCESSING" | "SUCCEEDED" | "FAILED" | undefined; limit: number }) {
+    const where: Prisma.PayoutWhereInput = {
+      businessId: input.businessId,
+      ...(input.status ? { status: input.status } : {}),
+    };
+
     return prisma.payout.findMany({
-      where: {
-        businessId: input.businessId,
-        status: input.status,
-      },
+      where,
       orderBy: {
         createdAt: "desc",
       },

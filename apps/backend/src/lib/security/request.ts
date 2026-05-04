@@ -33,7 +33,8 @@ export function parseQuery<T extends z.ZodTypeAny>(
 }
 
 export async function applyApiGuard(endpointKey: string) {
-  const ip = headers().get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const incomingHeaders = await headers();
+  const ip = incomingHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   enforceRateLimit(`${endpointKey}:${ip}`, {
     maxRequests: 100,
     windowMs: 60_000,

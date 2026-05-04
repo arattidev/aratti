@@ -48,7 +48,7 @@ export async function getAuthContext(): Promise<AuthContext | null> {
 }
 
 async function getBypassAuthContext(): Promise<AuthContext | null> {
-  const headersList = headers();
+  const headersList = await headers();
   const authorization = headersList.get("authorization");
   const token = extractBearerToken(authorization);
 

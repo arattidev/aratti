@@ -19,10 +19,16 @@ export function createAccessToken(context: AuthContext, expiresInSeconds = 60 * 
   const payload: TokenPayload = {
     sub: context.userId,
     role: context.role,
-    email: context.email,
-    businessIds: context.businessIds,
     exp: Math.floor(Date.now() / 1000) + expiresInSeconds,
   };
+
+  if (context.email !== undefined) {
+    payload.email = context.email;
+  }
+
+  if (context.businessIds !== undefined) {
+    payload.businessIds = context.businessIds;
+  }
 
   const encodedPayload = Buffer.from(JSON.stringify(payload)).toString("base64url");
   const signature = sign(`${tokenVersion}.${encodedPayload}`);
@@ -56,12 +62,17 @@ export function verifyAccessToken(token: string): AuthContext {
     throw new HttpError(401, "unauthorized", "Access token expired");
   }
 
-  return {
+  const context: AuthContext = {
     userId: payload.sub,
     role: payload.role,
-    email: payload.email,
     businessIds: payload.businessIds ?? [],
   };
+
+  if (payload.email !== undefined) {
+    context.email = payload.email;
+  }
+
+  return context;
 }
 
 function sign(content: string): string {

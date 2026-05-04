@@ -31,12 +31,12 @@ export class AuthRepository {
       const user = await tx.user.create({
         data: {
           email: input.email,
-          passwordHash: input.passwordHash,
+          passwordHash: input.passwordHash ?? null,
           authProvider: input.authProvider ?? "PASSWORD",
-          firstName: input.firstName,
+          firstName: input.firstName ?? null,
           locale: input.locale ?? "es-AR",
           role: "BUSINESS",
-          emailVerifiedAt: input.authProvider === "GOOGLE" || input.authProvider === "CLERK" ? new Date() : undefined,
+          emailVerifiedAt: input.authProvider === "GOOGLE" || input.authProvider === "CLERK" ? new Date() : null,
         },
       });
 
@@ -85,9 +85,9 @@ export class AuthRepository {
       update: {
         clerkUserId: input.clerkUserId,
         authProvider: "CLERK",
-        firstName: input.firstName,
-        lastName: input.lastName,
-        avatarUrl: input.avatarUrl,
+        firstName: input.firstName ?? null,
+        lastName: input.lastName ?? null,
+        avatarUrl: input.avatarUrl ?? null,
         locale: input.locale,
         lastSeenAt: new Date(),
         deletedAt: null,
@@ -96,9 +96,9 @@ export class AuthRepository {
         clerkUserId: input.clerkUserId,
         email: input.email,
         authProvider: "CLERK",
-        firstName: input.firstName,
-        lastName: input.lastName,
-        avatarUrl: input.avatarUrl,
+        firstName: input.firstName ?? null,
+        lastName: input.lastName ?? null,
+        avatarUrl: input.avatarUrl ?? null,
         locale: input.locale,
       },
     });
@@ -117,7 +117,7 @@ export class AuthRepository {
         email: input.email,
       },
       update: {
-        firstName: input.firstName,
+        firstName: input.firstName ?? null,
         authProvider: input.authProvider,
         emailVerifiedAt: new Date(),
         deletedAt: null,
@@ -125,7 +125,7 @@ export class AuthRepository {
       },
       create: {
         email: input.email,
-        firstName: input.firstName,
+        firstName: input.firstName ?? null,
         authProvider: input.authProvider,
         role: "BUSINESS",
         emailVerifiedAt: new Date(),

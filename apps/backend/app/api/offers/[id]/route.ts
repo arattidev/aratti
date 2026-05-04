@@ -1,15 +1,10 @@
 import { apiError } from "../../../../src/lib/http";
 import { getOfferByIdController } from "../../../../src/modules/offers/offers.controller";
 
-interface RouteContext {
-  params: {
-    id: string;
-  };
-}
-
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    return await getOfferByIdController(context.params);
+    const params = await context.params;
+    return await getOfferByIdController(params);
   } catch (error) {
     return apiError(error);
   }

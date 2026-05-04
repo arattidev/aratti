@@ -2,12 +2,12 @@ import Link from "next/link";
 
 const cards = [
   {
-    href: "/business",
+    href: "/business" as const,
     title: "Panel de negocios",
     description: "Publicación de ofertas, órdenes y revenue.",
   },
   {
-    href: "/admin",
+    href: "/admin" as const,
     title: "Panel admin",
     description: "Verificación, fraude, refunds y soporte.",
   },

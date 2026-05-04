@@ -1,4 +1,4 @@
-import { prisma } from "@aratti/db";
+import { prisma, type Prisma } from "@aratti/db";
 
 export class NotificationsRepository {
   async createNotification(input: {
@@ -14,16 +14,21 @@ export class NotificationsRepository {
     body: string;
     payload?: Record<string, unknown>;
   }) {
+    const data: Prisma.NotificationUncheckedCreateInput = {
+      userId: input.userId,
+      type: input.type,
+      channel: "PUSH",
+      status: "QUEUED",
+      title: input.title,
+      body: input.body,
+    };
+
+    if (input.payload !== undefined) {
+      data.payload = input.payload as Prisma.InputJsonValue;
+    }
+
     return prisma.notification.create({
-      data: {
-        userId: input.userId,
-        type: input.type,
-        channel: "PUSH",
-        status: "QUEUED",
-        title: input.title,
-        body: input.body,
-        payload: input.payload,
-      },
+      data,
     });
   }
 

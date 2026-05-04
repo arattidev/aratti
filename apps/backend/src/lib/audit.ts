@@ -1,4 +1,4 @@
-import { prisma } from "@aratti/db";
+import { prisma, type Prisma } from "@aratti/db";
 import type { UserRole } from "@aratti/types";
 
 export async function createAuditLog(input: {
@@ -13,18 +13,21 @@ export async function createAuditLog(input: {
   riskScore?: number;
   metadata?: Record<string, unknown>;
 }) {
+  const data: Prisma.AuditLogUncheckedCreateInput = {
+    action: input.action,
+    entityType: input.entityType,
+    entityId: input.entityId,
+  };
+
+  if (input.actorUserId !== undefined) data.actorUserId = input.actorUserId;
+  if (input.actorRole !== undefined) data.actorRole = input.actorRole;
+  if (input.requestId !== undefined) data.requestId = input.requestId;
+  if (input.ipAddress !== undefined) data.ipAddress = input.ipAddress;
+  if (input.userAgent !== undefined) data.userAgent = input.userAgent;
+  if (input.riskScore !== undefined) data.riskScore = input.riskScore;
+  if (input.metadata !== undefined) data.metadata = input.metadata as Prisma.InputJsonValue;
+
   return prisma.auditLog.create({
-    data: {
-      actorUserId: input.actorUserId,
-      actorRole: input.actorRole,
-      action: input.action,
-      entityType: input.entityType,
-      entityId: input.entityId,
-      requestId: input.requestId,
-      ipAddress: input.ipAddress,
-      userAgent: input.userAgent,
-      riskScore: input.riskScore,
-      metadata: input.metadata,
-    },
+    data,
   });
 }

@@ -80,12 +80,36 @@ export class BusinessService {
 
     assertBusinessAccess(context, existingOffer.businessId);
 
-    const updatedOffer = await this.businessRepository.updateOffer({
+    const updateInput: {
+      offerId: string;
+      title?: string;
+      description?: string;
+      category?: string;
+      originalPriceArs?: number;
+      rescuePriceArs?: number;
+      quantityTotal?: number;
+      pickupStartAt?: Date;
+      pickupEndAt?: Date;
+      status?: "DRAFT" | "ACTIVE" | "PAUSED" | "SOLD_OUT" | "EXPIRED" | "ARCHIVED";
+      imageUrls?: string[];
+      tags?: string[];
+    } = {
       offerId: existingOffer.id,
-      ...payload,
-      pickupStartAt: payload.pickupStartAt ? new Date(payload.pickupStartAt) : undefined,
-      pickupEndAt: payload.pickupEndAt ? new Date(payload.pickupEndAt) : undefined,
-    });
+    };
+
+    if (payload.title !== undefined) updateInput.title = payload.title;
+    if (payload.description !== undefined) updateInput.description = payload.description;
+    if (payload.category !== undefined) updateInput.category = payload.category;
+    if (payload.originalPriceArs !== undefined) updateInput.originalPriceArs = payload.originalPriceArs;
+    if (payload.rescuePriceArs !== undefined) updateInput.rescuePriceArs = payload.rescuePriceArs;
+    if (payload.quantityTotal !== undefined) updateInput.quantityTotal = payload.quantityTotal;
+    if (payload.pickupStartAt !== undefined) updateInput.pickupStartAt = new Date(payload.pickupStartAt);
+    if (payload.pickupEndAt !== undefined) updateInput.pickupEndAt = new Date(payload.pickupEndAt);
+    if (payload.status !== undefined) updateInput.status = payload.status;
+    if (payload.imageUrls !== undefined) updateInput.imageUrls = payload.imageUrls;
+    if (payload.tags !== undefined) updateInput.tags = payload.tags;
+
+    const updatedOffer = await this.businessRepository.updateOffer(updateInput);
 
     await createAuditLog({
       actorUserId: context.userId,
@@ -182,15 +206,25 @@ export class BusinessService {
     }
 
     const date = new Date(`${payload.date}T00:00:00.000Z`);
-    const availability = await this.businessRepository.upsertAvailability({
+    const availabilityInput: {
+      businessId: string;
+      offerId: string;
+      date: Date;
+      quantityPublished: number;
+      quantityAvailable: number;
+      status: "DRAFT" | "PUBLISHED" | "CLOSED";
+      notes?: string;
+    } = {
       businessId: payload.businessId,
       offerId: payload.offerId,
       date,
       quantityPublished: payload.quantityPublished,
       quantityAvailable: payload.quantityAvailable ?? payload.quantityPublished,
       status: payload.status,
-      notes: payload.notes,
-    });
+      ...(payload.notes !== undefined ? { notes: payload.notes } : {}),
+    };
+
+    const availability = await this.businessRepository.upsertAvailability(availabilityInput);
 
     await createAuditLog({
       actorUserId: context.userId,
@@ -260,10 +294,22 @@ export class BusinessService {
     }
 
     assertBusinessAccess(context, current.businessId);
-    const updated = await this.businessRepository.updateAvailability({
+    const updateInput: {
+      id: string;
+      quantityPublished?: number;
+      quantityAvailable?: number;
+      status?: "DRAFT" | "PUBLISHED" | "CLOSED";
+      notes?: string;
+    } = {
       id: current.id,
-      ...payload,
-    });
+    };
+
+    if (payload.quantityPublished !== undefined) updateInput.quantityPublished = payload.quantityPublished;
+    if (payload.quantityAvailable !== undefined) updateInput.quantityAvailable = payload.quantityAvailable;
+    if (payload.status !== undefined) updateInput.status = payload.status;
+    if (payload.notes !== undefined) updateInput.notes = payload.notes;
+
+    const updated = await this.businessRepository.updateAvailability(updateInput);
 
     await createAuditLog({
       actorUserId: context.userId,
@@ -291,17 +337,26 @@ export class BusinessService {
 
     const isMock = env.PAYMENTS_MODE === "MOCK";
 
-    const payout = await this.businessRepository.createPayout({
+    const payoutInput: {
+      businessId: string;
+      amountArs: number;
+      provider: "MOCK" | "STRIPE";
+      status: "PENDING" | "PROCESSING" | "SUCCEEDED" | "FAILED";
+      reference?: string;
+      metadata?: Record<string, unknown>;
+      paidAt?: Date;
+    } = {
       businessId: payload.businessId,
       amountArs: payload.amountArs,
       provider: isMock ? "MOCK" : "STRIPE",
       status: isMock ? "SUCCEEDED" : "PENDING",
-      reference: isMock ? `mock_payout_${Date.now()}` : undefined,
       metadata: {
         mode: env.PAYMENTS_MODE,
       },
-      paidAt: isMock ? new Date() : undefined,
-    });
+      ...(isMock ? { reference: `mock_payout_${Date.now()}`, paidAt: new Date() } : {}),
+    };
+
+    const payout = await this.businessRepository.createPayout(payoutInput);
 
     await createAuditLog({
       actorUserId: context.userId,

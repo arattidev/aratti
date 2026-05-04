@@ -1,15 +1,10 @@
 import { apiError } from "../../../../../src/lib/http";
 import { updateBusinessAvailabilityController } from "../../../../../src/modules/business/business.controller";
 
-interface RouteContext {
-  params: {
-    id: string;
-  };
-}
-
-export async function PATCH(request: Request, context: RouteContext) {
+export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    return await updateBusinessAvailabilityController(request, context.params);
+    const params = await context.params;
+    return await updateBusinessAvailabilityController(request, params);
   } catch (error) {
     return apiError(error);
   }

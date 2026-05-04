@@ -129,8 +129,9 @@ export default function BusinessPage() {
       setAvailability(availabilityData.data);
       setPayouts(payoutsData.data);
 
-      if (offersData.data[0]) {
-        setAvailabilityForm((prev) => ({ ...prev, offerId: offersData.data[0].id }));
+      const firstOffer = offersData.data.at(0);
+      if (firstOffer) {
+        setAvailabilityForm((prev) => ({ ...prev, offerId: firstOffer.id }));
       }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudo cargar el dashboard");

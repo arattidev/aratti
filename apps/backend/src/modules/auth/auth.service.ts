@@ -48,9 +48,9 @@ export class AuthService {
     const user = await this.authRepository.createBusinessUser({
       email: payload.email,
       passwordHash: hashPassword(payload.password),
-      firstName: payload.name,
       authProvider: "PASSWORD",
-      businessName: payload.businessName,
+      ...(payload.name ? { firstName: payload.name } : {}),
+      ...(payload.businessName ? { businessName: payload.businessName } : {}),
     });
 
     const context = await this.buildAuthContext(user.id);
@@ -72,10 +72,10 @@ export class AuthService {
       const user = await this.authRepository.upsertLegacyClerkUser({
         clerkUserId: payload.clerkUserId,
         email: payload.email,
-        firstName: payload.firstName,
-        lastName: payload.lastName,
-        avatarUrl: payload.avatarUrl,
         locale: payload.locale,
+        ...(payload.firstName ? { firstName: payload.firstName } : {}),
+        ...(payload.lastName ? { lastName: payload.lastName } : {}),
+        ...(payload.avatarUrl ? { avatarUrl: payload.avatarUrl } : {}),
       });
 
       const context = await this.buildAuthContext(user.id);
@@ -136,13 +136,13 @@ export class AuthService {
 
     const user = await this.authRepository.upsertOAuthUser({
       email: payload.email,
-      firstName: payload.name,
       authProvider: "GOOGLE",
+      ...(payload.name ? { firstName: payload.name } : {}),
     });
 
     await this.authRepository.ensureBusinessMembershipForUser({
       userId: user.id,
-      businessName: payload.name ? `${payload.name} Business` : undefined,
+      ...(payload.name ? { businessName: `${payload.name} Business` } : {}),
     });
 
     const refreshedUser = await this.authRepository.findUserByEmail(payload.email);
