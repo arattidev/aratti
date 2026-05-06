@@ -1,0 +1,23 @@
+---
+description: Backend API-first, typing, security, and PostgreSQL scalability rules
+globs: apps/backend/**/*.{ts,tsx,js},packages/api/**/*.ts,packages/db/**/*.ts,packages/payments/**/*.ts,packages/auth/**/*.ts,packages/types/**/*.ts
+alwaysApply: true
+---
+
+# Backend Best Practices 2026
+
+- Diseña APIs API-First: define contrato antes de implementar handlers y persistencia.
+- Valida inputs y outputs con esquemas tipados (TypeScript + Zod) en cada boundary de API.
+- No aceptes payloads sin validacion estructural y semantica.
+- Mantiene errores de dominio y errores HTTP diferenciados con codigos consistentes.
+- Implementa autenticacion y autorizacion con OAuth 2.1 / OpenID Connect en rutas protegidas.
+- Aplica principio de minimo privilegio en scopes, roles y permisos por recurso.
+- Cifra datos sensibles en reposo y en transito; no almacenes secretos en texto plano.
+- Usa practicas OWASP Mobile Top 10 para endpoints consumidos por clientes moviles.
+- Haz operaciones criticas idempotentes cuando exista riesgo de reintentos o duplicados.
+- Usa control de concurrencia explicito (transacciones, bloqueos, optimistic concurrency) donde haya contencion.
+- Disena tablas PostgreSQL con indices orientados a patrones reales de consulta.
+- No agregues indices sin justificar lectura/escritura y cardinalidad.
+- Mantiene migraciones reversibles y seguras para despliegues progresivos.
+- Evita N+1 queries; agrupa lecturas y reduce round-trips a DB.
+- Registra auditoria y eventos de seguridad en operaciones sensibles.

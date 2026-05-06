@@ -1,0 +1,22 @@
+---
+description: Clean Architecture and SOLID enforcement across Expo, backend, and shared packages
+globs: apps/**/*.{ts,tsx,js,jsx},packages/**/*.{ts,tsx,js,jsx}
+alwaysApply: true
+---
+
+# Clean Architecture and SOLID
+
+- Aplica separacion estricta por capas: UI/transport, application/use cases, y infrastructure/adapters.
+- Coloca reglas de negocio solo en servicios, use cases o modulos de dominio; no las mezcles con vistas ni rutas.
+- Haz que componentes React y pantallas Expo sean "thin": renderizan UI, disparan acciones y leen estado derivado.
+- No implementes logica de negocio compleja dentro de componentes React, hooks de pantalla o handlers JSX.
+- Extrae logica reutilizable a funciones puras o hooks de dominio con contratos tipados.
+- Inyecta dependencias en servicios en vez de acoplarlos a implementaciones concretas.
+- Programa contra interfaces/contratos y no contra detalles concretos de infraestructura.
+- Mantiene cada modulo con responsabilidad unica (SRP): evita clases/servicios "god object".
+- Evita condicionamiento transversal duplicado; encapsula politicas de negocio en un unico punto.
+- Haz que reglas de dominio sean testeables sin UI, red o base de datos.
+- Separa modelos de dominio de DTOs de transporte; no expongas entidades internas directamente.
+- No accedas a DB, fetch ni storage directamente desde componentes de UI.
+- Usa mappers explicitos entre capa de persistencia y capa de negocio.
+- Rechaza atajos que rompan inversion de dependencias aunque "funcionen rapido".
