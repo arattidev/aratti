@@ -22,3 +22,7 @@ prisma/dev.db-journal
 .DS_Store
 .vscode/*.code-snippets
 .vscode/settings.json
+
+.turbo/
+
+.env.local

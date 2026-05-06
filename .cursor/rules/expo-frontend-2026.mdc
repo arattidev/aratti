@@ -1,0 +1,22 @@
+---
+description: Expo frontend 2026 standards for New Architecture, performance, navigation, and data fetching
+globs: apps/mobile/**/*.{ts,tsx,js,jsx},packages/ui/**/*.{ts,tsx,js,jsx},packages/api/**/*.{ts,tsx,js,jsx}
+alwaysApply: true
+---
+
+# Expo Frontend 2026
+
+- Usa Expo con New Architecture habilitada (Fabric + TurboModules) para toda nueva funcionalidad.
+- No agregues librerias React Native que no sean compatibles con New Architecture.
+- Usa `FlashList` de Shopify para listas largas o virtualizadas; no uses `FlatList` en feeds grandes.
+- Define `estimatedItemSize` y claves estables en `FlashList` para evitar jank.
+- Usa imagenes WebP para assets de producto, feed y marketing cuando el origen lo permita.
+- Evita rerenders innecesarios: memoiza componentes puros, selectores y callbacks criticos.
+- No crees objetos/funciones inline en listas de alto trafico sin memoizacion.
+- Usa navegacion exclusiva con `native-stack` para flujos principales.
+- No introduzcas navegadores alternativos como stack principal sin justificacion arquitectonica documentada.
+- Usa React Query (o SWR en casos justificados) para server state, cache, reintentos e invalidacion.
+- No implementes caching manual ad hoc cuando React Query/SWR cubra el caso.
+- Separa estado de UI efimero del server state; no mezcles ambos en stores globales sin necesidad.
+- Prioriza render incremental, skeletons y prefetch de datos para transiciones percibidas fluidas.
+- Perfila pantallas criticas antes de optimizar; aplica cambios de performance medibles.

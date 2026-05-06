@@ -1,0 +1,20 @@
+---
+description: Security and authentication rules for token lifecycle and secure device storage
+globs: apps/mobile/**/*.{ts,tsx,js,jsx},apps/backend/**/*.{ts,tsx,js},packages/auth/**/*.ts,packages/payments/**/*.ts
+alwaysApply: true
+---
+
+# Security and Auth
+
+- Emite access tokens de vida corta; evita tokens de larga duracion para acceso directo.
+- Usa refresh tokens con rotacion y revocacion; invalida cadenas comprometidas.
+- No persistas access tokens en almacenamiento inseguro ni en texto plano.
+- Guarda secretos y credenciales de usuario en dispositivo solo con `expo-secure-store`.
+- No uses AsyncStorage para tokens, secretos criptograficos ni material sensible.
+- Implementa logout que limpie credenciales locales y estado de sesion remoto.
+- Valida firma, emisor, audiencia y expiracion de tokens en backend.
+- Rechaza tokens expirados o mal formados sin degradar a comportamiento permisivo.
+- Aplica protecciones anti-replay en webhooks y operaciones firmadas.
+- Usa nonce/state firmado y con expiracion en flujos OAuth.
+- Registra y monitorea eventos de autenticacion anomala, fallos repetidos y revocaciones.
+- No expongas secretos en logs, errores serializados ni respuestas de API.
