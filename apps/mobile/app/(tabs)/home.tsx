@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { router } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { FlashList } from "@shopify/flash-list";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { HarvestScreen } from "../../src/components/harvest-screen";
 import { OfferCard } from "../../src/components/offer-card";
@@ -54,30 +55,44 @@ export default function HomeScreen() {
 
       <View>
         <Text style={styles.miniTitle}>Categorías</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesRow}>
-          {categories.map((category) => (
-            <Pressable key={category} style={styles.categoryChip}>
+        <FlashList
+          horizontal
+          data={categories}
+          keyExtractor={(category) => category}
+          estimatedItemSize={100}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoriesRow}
+          ItemSeparatorComponent={() => <View style={styles.horizontalSeparator} />}
+          renderItem={({ item: category }) => (
+            <Pressable style={styles.categoryChip}>
               <Text style={styles.categoryText}>{category}</Text>
             </Pressable>
-          ))}
-        </ScrollView>
+          )}
+        />
       </View>
 
       <SectionTitle title="Ofertas de Hoy" actionLabel="Ver todo" />
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        {nearbyQuery.isLoading
-          ? [1, 2].map((item) => <SkeletonCard key={item} />)
-          : offers.map((offer) => (
-              <OfferCard
-                key={offer.id}
-                offer={offer}
-                onPress={() => {
-                  router.push(`/offer/${offer.id}`);
-                }}
-              />
-            ))}
-      </ScrollView>
+      <FlashList
+        horizontal
+        data={nearbyQuery.isLoading ? [1, 2] : offers}
+        keyExtractor={(item) => (typeof item === "number" ? `skeleton-${item}` : item.id)}
+        estimatedItemSize={280}
+        showsHorizontalScrollIndicator={false}
+        ItemSeparatorComponent={() => <View style={styles.horizontalSeparator} />}
+        renderItem={({ item }) =>
+          typeof item === "number" ? (
+            <SkeletonCard />
+          ) : (
+            <OfferCard
+              offer={item}
+              onPress={() => {
+                router.push(`/offer/${item.id}`);
+              }}
+            />
+          )
+        }
+      />
 
       <SectionTitle title="Cerca de Vos" actionLabel={cityLabel.toUpperCase()} />
       <SurfaceCard style={styles.mapCard} elevated={false}>
@@ -142,7 +157,10 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.lg,
   },
   categoriesRow: {
-    gap: theme.spacing.md,
+    paddingRight: theme.spacing.lg,
+  },
+  horizontalSeparator: {
+    width: theme.spacing.md,
   },
   categoryChip: {
     backgroundColor: theme.colors.surfaceContainerLowest,

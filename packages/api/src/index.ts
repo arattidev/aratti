@@ -6,3 +6,4 @@ export * from "./schemas/common";
 export * from "./schemas/offers";
 export * from "./schemas/orders";
 export * from "./schemas/payments";
+export * from "./schemas/mercadopago";

@@ -2,6 +2,7 @@
   "expo": {
     "name": "Aratti",
     "slug": "aratti-mobile",
+    "newArchEnabled": true,
     "scheme": "aratti",
     "version": "1.0.0",
     "orientation": "portrait",

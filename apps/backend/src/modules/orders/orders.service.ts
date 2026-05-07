@@ -4,6 +4,7 @@ import { createOrderBodySchema, orderHistoryQuerySchema, pickupOrderBodySchema }
 import type { AuthContext } from "@aratti/auth";
 
 import { createAuditLog } from "../../lib/audit";
+import { env } from "../../lib/env";
 import { HttpError } from "../../lib/errors";
 import { evaluatePurchaseRisk } from "../../lib/fraud";
 import { assertBusinessAccess } from "../../lib/security/auth";
@@ -43,7 +44,7 @@ export class OrdersService {
     const pickupCode = pickupToken.slice(0, 8).toUpperCase();
 
     const subtotalArs = offer.rescuePriceArs * payload.quantity;
-    const serviceFeeArs = Math.round(subtotalArs * 0.06);
+    const serviceFeeArs = Math.round(subtotalArs * (env.MARKETPLACE_COMMISSION_PERCENTAGE / 100));
     const totalArs = subtotalArs + serviceFeeArs;
 
     const order = await this.ordersRepository.createPendingOrder({

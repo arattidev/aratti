@@ -2,10 +2,10 @@ import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { theme } from "../theme";
-import type { OfferCard } from "@aratti/types";
+import type { OfferCard as OfferCardType } from "@aratti/types";
 
 interface OfferCardProps {
-  offer: OfferCard;
+  offer: OfferCardType;
   onPress: () => void;
 }
 
