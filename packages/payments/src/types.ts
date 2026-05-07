@@ -47,13 +47,73 @@ export interface WebhookContext {
   query?: Record<string, string | string[] | undefined>;
 }
 
+export type WebhookTopic = "payment" | "merchant_order" | "unknown";
+
 export interface WebhookResult {
   shouldAcknowledge: boolean;
   eventType: string;
+  topic?: WebhookTopic;
   externalPaymentId?: string;
+  merchantOrderId?: string;
   externalOrderId?: string;
   paymentStatus?: "PENDING" | "SUCCEEDED" | "FAILED" | "REFUNDED";
   payload: unknown;
+}
+
+export interface SplitPreferenceItem {
+  id: string;
+  title: string;
+  quantity: number;
+  unitPriceArs: number;
+}
+
+export interface CreateSplitPreferenceInput {
+  orderId: string;
+  orderNumber: string;
+  items: SplitPreferenceItem[];
+  payerEmail?: string;
+  sellerAccessToken: string;
+  applicationId: string;
+  marketplaceFeeArs: number;
+  idempotencyKey: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface CreateSplitPreferenceResult {
+  externalPreferenceId: string;
+  checkoutUrl: string;
+  sandboxCheckoutUrl?: string;
+  raw: unknown;
+}
+
+export interface OAuthAuthorizationUrlInput {
+  state: string;
+  redirectUri: string;
+}
+
+export interface OAuthExchangeInput {
+  code: string;
+  redirectUri: string;
+}
+
+export interface OAuthExchangeResult {
+  accessToken: string;
+  refreshToken: string;
+  publicKey?: string;
+  liveMode: boolean;
+  scope: string;
+  mpUserId: string;
+  expiresAt: Date;
+  raw: unknown;
+}
+
+export interface OAuthRefreshInput {
+  refreshToken: string;
+}
+
+export interface OAuthRevokeInput {
+  mpUserId: string;
+  accessToken: string;
 }
 
 export interface PaymentProvider {

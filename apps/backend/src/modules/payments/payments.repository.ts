@@ -29,6 +29,26 @@ export class PaymentsRepository {
     });
   }
 
+  async findPaymentByMerchantOrderId(merchantOrderId: string) {
+    return prisma.payment.findFirst({
+      where: {
+        merchantOrderId,
+        deletedAt: null,
+      },
+    });
+  }
+
+  async findPendingPaymentByOrderId(orderId: string) {
+    return prisma.payment.findFirst({
+      where: {
+        orderId,
+        provider: "MERCADO_PAGO",
+        deletedAt: null,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
   async createPayment(input: {
     orderId: string;
     userId: string;
@@ -39,6 +59,8 @@ export class PaymentsRepository {
     providerPaymentId?: string;
     providerPreferenceId?: string;
     paymentMethod?: string;
+    marketplaceFeeArs?: number;
+    sellerAmountArs?: number;
     metadata?: Record<string, unknown>;
   }) {
     const data: Prisma.PaymentUncheckedCreateInput = {
@@ -52,6 +74,8 @@ export class PaymentsRepository {
       providerPaymentId: input.providerPaymentId ?? null,
       providerPreferenceId: input.providerPreferenceId ?? null,
       paymentMethod: input.paymentMethod ?? null,
+      marketplaceFeeArs: input.marketplaceFeeArs ?? null,
+      sellerAmountArs: input.sellerAmountArs ?? null,
     };
 
     if (input.metadata !== undefined) {
@@ -63,11 +87,20 @@ export class PaymentsRepository {
     });
   }
 
-  async updatePaymentStatusById(paymentId: string, input: { status: string; providerPaymentId?: string; metadata?: unknown }) {
+  async updatePaymentStatusById(
+    paymentId: string,
+    input: {
+      status: string;
+      providerPaymentId?: string;
+      merchantOrderId?: string;
+      metadata?: unknown;
+    },
+  ) {
     const data: Prisma.PaymentUpdateInput = {
       status: input.status as never,
       lastWebhookAt: new Date(),
       ...(input.providerPaymentId !== undefined ? { providerPaymentId: input.providerPaymentId } : {}),
+      ...(input.merchantOrderId !== undefined ? { merchantOrderId: input.merchantOrderId } : {}),
       ...(input.metadata !== undefined ? { metadata: input.metadata as Prisma.InputJsonValue } : {}),
       ...(input.status === "SUCCEEDED" ? { capturedAt: new Date() } : {}),
       ...(input.status === "REFUNDED" ? { refundedAt: new Date() } : {}),

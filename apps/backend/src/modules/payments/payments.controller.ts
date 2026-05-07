@@ -28,10 +28,13 @@ export async function mercadoPagoWebhookController(request: Request) {
 
   const rawBody = await request.text();
   const headers = Object.fromEntries(request.headers.entries());
+  const url = new URL(request.url);
+  const query = Object.fromEntries(url.searchParams.entries());
 
   const data = await paymentsService.handleMercadoPagoWebhook({
     rawBody,
     headers,
+    query,
   });
 
   return apiSuccess(data, 200);

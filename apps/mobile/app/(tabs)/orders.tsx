@@ -7,7 +7,7 @@ import { SurfaceCard } from "../../src/components/surface-card";
 import { useOrderHistory } from "../../src/hooks/use-order-history";
 import { theme } from "../../src/theme";
 
-const tabs: Array<"active" | "past" | "cancelled"> = ["active", "past", "cancelled"];
+const tabs: ("active" | "past" | "cancelled")[] = ["active", "past", "cancelled"];
 
 export default function OrdersScreen() {
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>("active");
