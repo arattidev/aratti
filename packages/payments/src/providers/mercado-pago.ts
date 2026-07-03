@@ -17,6 +17,11 @@ export interface MercadoPagoConfig {
   webhookSecret: string;
   baseUrl?: string;
   frontendBaseUrl: string;
+  checkoutMode?: "SANDBOX" | "PRODUCTION";
+  successUrl?: string | undefined;
+  failureUrl?: string | undefined;
+  pendingUrl?: string | undefined;
+  notificationUrl?: string | undefined;
 }
 
 export class MercadoPagoProvider implements PaymentProvider {
@@ -51,23 +56,31 @@ export class MercadoPagoProvider implements PaymentProvider {
           order_number: input.orderNumber,
         },
         back_urls: {
-          success: `${this.config.frontendBaseUrl}/payment/success`,
-          failure: `${this.config.frontendBaseUrl}/payment/failure`,
-          pending: `${this.config.frontendBaseUrl}/payment/pending`,
+          success: this.config.successUrl ?? `${this.config.frontendBaseUrl}/payment/success`,
+          failure: this.config.failureUrl ?? `${this.config.frontendBaseUrl}/payment/failure`,
+          pending: this.config.pendingUrl ?? `${this.config.frontendBaseUrl}/payment/pending`,
         },
         auto_return: "approved",
+        ...(this.config.notificationUrl ? { notification_url: this.config.notificationUrl } : {}),
       }),
     });
 
-    const data = await response.json();
+    const data = await response.json() as {
+      id?: string;
+      init_point?: string;
+      sandbox_init_point?: string;
+      [key: string]: unknown;
+    };
 
     if (!response.ok) {
       throw new Error(`Mercado Pago preference creation failed: ${JSON.stringify(data)}`);
     }
 
+    const checkoutUrl = this.config.checkoutMode === "SANDBOX" ? data.sandbox_init_point : data.init_point;
+
     return {
-      externalPreferenceId: data.id,
-      checkoutUrl: data.init_point,
+      ...(data.id ? { externalPreferenceId: data.id } : {}),
+      ...(checkoutUrl ? { checkoutUrl } : {}),
       status: "REQUIRES_ACTION",
       raw: data,
     };
@@ -127,7 +140,8 @@ export class MercadoPagoProvider implements PaymentProvider {
       throw new Error("Missing Mercado Pago webhook signature headers");
     }
 
-    this.assertWebhookSignature(signature, requestId, context.rawBody);
+    const dataId = context.query?.["data.id"] ?? context.query?.id;
+    this.assertWebhookSignature(signature, requestId, typeof dataId === "string" ? dataId : dataId?.[0]);
 
     const payload = JSON.parse(context.rawBody) as {
       action?: string;
@@ -146,19 +160,34 @@ export class MercadoPagoProvider implements PaymentProvider {
     };
   }
 
-  private assertWebhookSignature(signature: string, requestId: string, rawBody: string): void {
-    const signedTemplate = `id:${requestId};request-body:${rawBody};`;
+  private assertWebhookSignature(signature: string, requestId: string, dataId?: string): void {
+    const signatureParts = Object.fromEntries(
+      signature.split(",").flatMap((part) => {
+        const separatorIndex = part.indexOf("=");
+        if (separatorIndex === -1) {
+          return [];
+        }
 
-    const expectedHash = createHmac("sha256", this.config.webhookSecret).update(signedTemplate).digest("hex");
+        const key = part.slice(0, separatorIndex).trim().toLowerCase();
+        const value = part.slice(separatorIndex + 1).trim();
+        return key && value ? [[key, value]] : [];
+      }),
+    );
+    const timestamp = signatureParts.ts;
+    const normalizedIncoming = signatureParts.v1;
 
-    const normalizedIncoming = signature.split(",").find((part) => part.trim().startsWith("v1="))?.split("=")[1];
-
-    if (!normalizedIncoming) {
+    if (!timestamp || !normalizedIncoming || !/^\d+$/.test(timestamp)) {
       throw new Error("Mercado Pago webhook signature malformed");
     }
 
-    const incomingBuffer = Buffer.from(normalizedIncoming);
-    const expectedBuffer = Buffer.from(expectedHash);
+    const signedTemplate = [
+      ...(dataId ? [`id:${dataId}`] : []),
+      `request-id:${requestId}`,
+      `ts:${timestamp}`,
+    ].join(";") + ";";
+    const expectedHash = createHmac("sha256", this.config.webhookSecret).update(signedTemplate).digest("hex");
+    const incomingBuffer = Buffer.from(normalizedIncoming, "hex");
+    const expectedBuffer = Buffer.from(expectedHash, "hex");
 
     if (incomingBuffer.length !== expectedBuffer.length || !timingSafeEqual(incomingBuffer, expectedBuffer)) {
       throw new Error("Invalid Mercado Pago webhook signature");

@@ -20,6 +20,7 @@ packages/db/prisma/schema.prisma::MercadoPagoAccount          tokens cifrados po
 | Variable | Description |
 | --- | --- |
 | `PAYMENTS_MODE` | Set to `LIVE` to enable real Mercado Pago calls. |
+| `MERCADO_PAGO_CHECKOUT_MODE` | `SANDBOX` selects `sandbox_init_point`; use `PRODUCTION` only in the production deployment. |
 | `MERCADO_PAGO_CLIENT_ID` | Marketplace app client id (also used as `marketplace=MP-MKT-<id>`). |
 | `MERCADO_PAGO_CLIENT_SECRET` | OAuth client secret. |
 | `MERCADO_PAGO_OAUTH_REDIRECT_URI` | `<your-domain>/api/mercadopago/oauth/callback`. |

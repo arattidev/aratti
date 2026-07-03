@@ -14,6 +14,7 @@ const envSchema = z.object({
   MERCADO_PAGO_WEBHOOK_SECRET: z.string().optional(),
   MERCADO_PAGO_CLIENT_ID: z.string().optional(),
   MERCADO_PAGO_CLIENT_SECRET: z.string().optional(),
+  MERCADO_PAGO_CHECKOUT_MODE: z.enum(["SANDBOX", "PRODUCTION"]).default("SANDBOX"),
   MERCADO_PAGO_OAUTH_REDIRECT_URI: z.string().url().optional(),
   MERCADO_PAGO_SUCCESS_URL: z.string().url().optional(),
   MERCADO_PAGO_FAILURE_URL: z.string().url().optional(),

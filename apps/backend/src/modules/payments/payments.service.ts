@@ -75,6 +75,11 @@ export class PaymentsService {
         accessToken: env.MERCADO_PAGO_ACCESS_TOKEN ?? "",
         webhookSecret: env.MERCADO_PAGO_WEBHOOK_SECRET ?? "",
         frontendBaseUrl: env.API_BASE_URL ?? "https://example.com",
+        checkoutMode: env.MERCADO_PAGO_CHECKOUT_MODE,
+        successUrl: env.MERCADO_PAGO_SUCCESS_URL,
+        failureUrl: env.MERCADO_PAGO_FAILURE_URL,
+        pendingUrl: env.MERCADO_PAGO_PENDING_URL,
+        notificationUrl: env.MERCADO_PAGO_WEBHOOK_URL,
       },
     });
 
@@ -138,6 +143,7 @@ export class PaymentsService {
   async handleMercadoPagoWebhook(input: {
     rawBody: string;
     headers: Record<string, string | undefined>;
+    query: Record<string, string | string[] | undefined>;
   }) {
     if (env.PAYMENTS_MODE === "MOCK") {
       return { received: true, ignored: true, mode: "MOCK" };
@@ -148,12 +154,18 @@ export class PaymentsService {
         accessToken: env.MERCADO_PAGO_ACCESS_TOKEN ?? "",
         webhookSecret: env.MERCADO_PAGO_WEBHOOK_SECRET ?? "",
         frontendBaseUrl: env.API_BASE_URL ?? "https://example.com",
+        checkoutMode: env.MERCADO_PAGO_CHECKOUT_MODE,
+        successUrl: env.MERCADO_PAGO_SUCCESS_URL,
+        failureUrl: env.MERCADO_PAGO_FAILURE_URL,
+        pendingUrl: env.MERCADO_PAGO_PENDING_URL,
+        notificationUrl: env.MERCADO_PAGO_WEBHOOK_URL,
       },
     });
 
     const webhook = await provider.webhookHandler({
       rawBody: input.rawBody,
       headers: input.headers,
+      query: input.query,
     });
 
     if (!webhook.externalPaymentId) {
